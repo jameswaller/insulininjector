@@ -234,6 +234,51 @@
       text-transform: uppercase;
     }
 
+    .time-picker-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .time-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      padding: 8px 12px;
+      border-radius: 2px;
+      outline: none;
+      transition: border-color 0.2s ease;
+      width: 110px;
+      text-align: center;
+    }
+
+    .time-input:focus {
+      border-color: var(--muted);
+    }
+
+    .time-save-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .time-save-btn:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+
     .notif-btn {
       background: transparent;
       border: 1px solid var(--border);
@@ -311,9 +356,13 @@
     <div class="divider"></div>
 
     <div class="notification-section">
-      <div class="notif-label">9 PM reminder</div>
+      <div class="notif-label">Daily reminder</div>
+      <div class="time-picker-row">
+        <input type="time" class="time-input" id="timeInput" value="21:00" />
+        <button class="time-save-btn" id="timeSaveBtn">Set</button>
+      </div>
       <button class="notif-btn" id="notifBtn">Enable notifications</button>
-      <div class="notif-status" id="notifStatus">Get a reminder each night at 9 PM CST</div>
+      <div class="notif-status" id="notifStatus">Get a reminder each night at your chosen time (CST)</div>
     </div>
   </div>
 
@@ -434,6 +483,41 @@
     // ── Notifications ─────────────────────────────────────────────────────────
     const notifBtn = document.getElementById('notifBtn');
     const notifStatus = document.getElementById('notifStatus');
+    const timeInput = document.getElementById('timeInput');
+    const timeSaveBtn = document.getElementById('timeSaveBtn');
+
+    // Load saved time or default to 21:00
+    function getSavedTime() {
+      return localStorage.getItem('notif_time') || '21:00';
+    }
+
+    function getTimeLabel() {
+      const [h, m] = getSavedTime().split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hour = h % 12 || 12;
+      const min = m.toString().padStart(2, '0');
+      return `${hour}:${min} ${ampm}`;
+    }
+
+    timeInput.value = getSavedTime();
+
+    timeSaveBtn.addEventListener('click', async () => {
+      const val = timeInput.value;
+      if (!val) return;
+      localStorage.setItem('notif_time', val);
+      timeSaveBtn.textContent = '✓';
+      setTimeout(() => timeSaveBtn.textContent = 'Set', 1500);
+      // If notifications already enabled, tell SW about the new time
+      if (localStorage.getItem('notif_enabled') === '1') {
+        await sendTimeToSW(val);
+      }
+      updateNotifUI();
+    });
+
+    async function sendTimeToSW(time) {
+      const reg = await navigator.serviceWorker.ready;
+      reg.active && reg.active.postMessage({ type: 'SET_TIME', time });
+    }
 
     function updateNotifUI() {
       if (!('Notification' in window) || !('serviceWorker' in navigator)) {
@@ -445,7 +529,7 @@
       if (Notification.permission === 'granted' && localStorage.getItem('notif_enabled') === '1') {
         notifBtn.textContent = 'Notifications on';
         notifBtn.classList.add('enabled');
-        notifStatus.textContent = 'You\'ll be reminded at 9 PM CST each night';
+        notifStatus.textContent = `Reminder set for ${getTimeLabel()} CST each night`;
       } else if (Notification.permission === 'denied') {
         notifBtn.textContent = 'Blocked';
         notifBtn.disabled = true;
@@ -453,13 +537,12 @@
       } else {
         notifBtn.textContent = 'Enable notifications';
         notifBtn.classList.remove('enabled');
-        notifStatus.textContent = 'Get a reminder each night at 9 PM CST';
+        notifStatus.textContent = `Get a reminder each night at ${getTimeLabel()} CST`;
       }
     }
 
     notifBtn.addEventListener('click', async () => {
       if (localStorage.getItem('notif_enabled') === '1') {
-        // Toggle off
         localStorage.removeItem('notif_enabled');
         notifBtn.classList.remove('enabled');
         updateNotifUI();
@@ -471,6 +554,7 @@
         if (permission === 'granted') {
           localStorage.setItem('notif_enabled', '1');
           await registerServiceWorker();
+          await sendTimeToSW(getSavedTime());
           updateNotifUI();
         } else {
           updateNotifUI();
@@ -492,6 +576,7 @@
       updateNotifUI();
       if (localStorage.getItem('notif_enabled') === '1') {
         await registerServiceWorker();
+        await sendTimeToSW(getSavedTime());
       }
     });
   </script>
