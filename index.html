@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Insulin" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>Insulin Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #1e1e2e;
+      --left-color: #7eb8f7;
+      --right-color: #f7a67e;
+      --left-glow: rgba(126, 184, 247, 0.15);
+      --right-glow: rgba(247, 166, 126, 0.15);
+      --text: #e8e8f0;
+      --muted: #5a5a7a;
+      --done-color: #7ef7a6;
+      --done-glow: rgba(126, 247, 166, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 24px);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Atmospheric background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 30% 40%, var(--current-glow, var(--left-glow)) 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 40% at 80% 80%, rgba(30, 15, 60, 0.4) 0%, transparent 70%);
+      pointer-events: none;
+      transition: background 1s ease;
+    }
+
+    body.side-right::before {
+      background: radial-gradient(ellipse 60% 50% at 70% 40%, var(--right-glow) 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 40% at 20% 80%, rgba(60, 15, 15, 0.4) 0%, transparent 70%);
+    }
+
+    body.side-done::before {
+      background: radial-gradient(ellipse 60% 50% at 50% 40%, var(--done-glow) 0%, transparent 70%);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 390px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .date-label {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 48px;
+      font-weight: 300;
+    }
+
+    .tonight-label {
+      font-size: 12px;
+      letter-spacing: 0.25em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      font-weight: 300;
+    }
+
+    .side-display {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(72px, 22vw, 108px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      transition: color 0.6s ease, text-shadow 0.6s ease;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+
+    body:not(.side-done) .side-display.left {
+      color: var(--left-color);
+      text-shadow: 0 0 60px rgba(126, 184, 247, 0.4);
+    }
+
+    body:not(.side-done) .side-display.right {
+      color: var(--right-color);
+      text-shadow: 0 0 60px rgba(247, 166, 126, 0.4);
+    }
+
+    body.side-done .side-display {
+      color: var(--done-color);
+      text-shadow: 0 0 60px rgba(126, 247, 166, 0.4);
+    }
+
+    .side-sublabel {
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 56px;
+    }
+
+    .done-message {
+      font-family: 'DM Serif Display', serif;
+      font-size: 14px;
+      color: var(--done-color);
+      letter-spacing: 0.1em;
+      opacity: 0;
+      margin-bottom: 56px;
+      height: 20px;
+      transition: opacity 0.4s ease;
+    }
+
+    body.side-done .done-message {
+      opacity: 1;
+    }
+
+    body.side-done .side-sublabel {
+      opacity: 0;
+    }
+
+    .log-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 16px 40px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .log-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    body:not(.side-done) .log-btn:hover {
+      border-color: var(--left-color);
+      box-shadow: 0 0 20px rgba(126, 184, 247, 0.2);
+    }
+
+    body.side-right:not(.side-done) .log-btn:hover {
+      border-color: var(--right-color);
+      box-shadow: 0 0 20px rgba(247, 166, 126, 0.2);
+    }
+
+    .log-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    body.side-done .log-btn {
+      border-color: var(--done-color);
+      color: var(--done-color);
+      box-shadow: 0 0 20px rgba(126, 247, 166, 0.15);
+    }
+
+    .undo-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: color 0.2s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    body.side-done .undo-btn {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .undo-btn:hover { color: var(--text); }
+
+    .divider {
+      width: 1px;
+      height: 48px;
+      background: var(--border);
+      margin: 48px 0 24px;
+    }
+
+    .notification-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notif-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .notif-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 10px 24px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .notif-btn:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+
+    .notif-btn.enabled {
+      color: var(--done-color);
+      border-color: var(--done-color);
+      box-shadow: 0 0 12px rgba(126, 247, 166, 0.1);
+    }
+
+    .notif-status {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-align: center;
+      max-width: 260px;
+      line-height: 1.6;
+    }
+
+    .streak {
+      position: fixed;
+      top: env(safe-area-inset-top, 16px);
+      right: 24px;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .streak span {
+      color: var(--done-color);
+      font-size: 13px;
+    }
+
+    @keyframes pulse-in {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .side-display.animate {
+      animation: pulse-in 0.4s ease forwards;
+    }
+  </style>
+</head>
+<body>
+  <div class="streak" id="streak"></div>
+
+  <div class="container">
+    <div class="date-label" id="dateLabel"></div>
+
+    <div class="tonight-label">Tonight's side</div>
+    <div class="side-display" id="sideDisplay"></div>
+    <div class="side-sublabel" id="sideSublabel">injection site</div>
+    <div class="done-message">✓ logged for tonight</div>
+
+    <button class="log-btn" id="logBtn">Mark as done</button>
+    <button class="undo-btn" id="undoBtn">undo</button>
+
+    <div class="divider"></div>
+
+    <div class="notification-section">
+      <div class="notif-label">9 PM reminder</div>
+      <button class="notif-btn" id="notifBtn">Enable notifications</button>
+      <div class="notif-status" id="notifStatus">Get a reminder each night at 9 PM CST</div>
+    </div>
+  </div>
+
+  <script>
+    // ── Timezone-aware day-of-year logic ──────────────────────────────────────
+    // CST = UTC-6, CDT = UTC-5. We use Intl to get the local date in
+    // America/Chicago so DST is handled automatically.
+    function getChicagoDateParts() {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Chicago',
+        year: 'numeric', month: 'numeric', day: 'numeric'
+      }).formatToParts(now);
+      const p = {};
+      parts.forEach(x => p[x.type] = parseInt(x.value, 10));
+      return p; // { year, month, day }
+    }
+
+    function getDayOfYear(year, month, day) {
+      // Day of year 1-indexed. Works for leap years.
+      const start = new Date(Date.UTC(year, 0, 1));
+      const current = new Date(Date.UTC(year, month - 1, day));
+      return Math.floor((current - start) / 86400000) + 1;
+    }
+
+    function getTonightSide() {
+      const { year, month, day } = getChicagoDateParts();
+      const doy = getDayOfYear(year, month, day);
+      return doy % 2 === 1 ? 'Left' : 'Right';
+    }
+
+    function getStorageKey() {
+      const { year, month, day } = getChicagoDateParts();
+      return `done_${year}_${getDayOfYear(year, month, day)}`;
+    }
+
+    function isDoneToday() {
+      return localStorage.getItem(getStorageKey()) === '1';
+    }
+
+    function markDone() {
+      localStorage.setItem(getStorageKey(), '1');
+      // Increment streak
+      const { year, month, day } = getChicagoDateParts();
+      const doy = getDayOfYear(year, month, day);
+      const prev = parseInt(localStorage.getItem('streak_doy') || '0', 10);
+      const prevYear = parseInt(localStorage.getItem('streak_year') || '0', 10);
+      let streak = parseInt(localStorage.getItem('streak') || '0', 10);
+
+      const expectedPrev = doy - 1 === 0 ? 365 : doy - 1; // rough, good enough
+      if ((prev === doy - 1 && prevYear === year) || (doy === 1 && prev >= 364)) {
+        streak += 1;
+      } else {
+        streak = 1;
+      }
+      localStorage.setItem('streak', streak);
+      localStorage.setItem('streak_doy', doy);
+      localStorage.setItem('streak_year', year);
+    }
+
+    function undoDone() {
+      localStorage.removeItem(getStorageKey());
+    }
+
+    // ── UI ────────────────────────────────────────────────────────────────────
+    const body = document.body;
+    const sideDisplay = document.getElementById('sideDisplay');
+    const sideSublabel = document.getElementById('sideSublabel');
+    const logBtn = document.getElementById('logBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const dateLabel = document.getElementById('dateLabel');
+    const streakEl = document.getElementById('streak');
+
+    function render() {
+      const side = getTonightSide();
+      const done = isDoneToday();
+      const { year, month, day } = getChicagoDateParts();
+      const dateStr = new Date(Date.UTC(year, month - 1, day))
+        .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+      dateLabel.textContent = dateStr;
+
+      sideDisplay.textContent = side;
+      sideDisplay.className = 'side-display ' + side.toLowerCase();
+
+      body.className = '';
+      if (done) {
+        body.classList.add('side-done');
+        logBtn.textContent = '✓ done';
+      } else {
+        body.classList.add('side-' + side.toLowerCase());
+        logBtn.textContent = 'Mark as done';
+      }
+
+      const streak = parseInt(localStorage.getItem('streak') || '0', 10);
+      if (streak > 1) {
+        streakEl.innerHTML = `streak <span>${streak}</span>`;
+      } else {
+        streakEl.textContent = '';
+      }
+    }
+
+    logBtn.addEventListener('click', () => {
+      if (isDoneToday()) return;
+      markDone();
+      sideDisplay.classList.remove('animate');
+      void sideDisplay.offsetWidth;
+      sideDisplay.classList.add('animate');
+      render();
+    });
+
+    undoBtn.addEventListener('click', () => {
+      undoDone();
+      render();
+    });
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+    const notifBtn = document.getElementById('notifBtn');
+    const notifStatus = document.getElementById('notifStatus');
+
+    function updateNotifUI() {
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        notifBtn.textContent = 'Not supported';
+        notifBtn.disabled = true;
+        notifStatus.textContent = 'Notifications require adding this app to your Home Screen on iOS 16.4+';
+        return;
+      }
+      if (Notification.permission === 'granted' && localStorage.getItem('notif_enabled') === '1') {
+        notifBtn.textContent = 'Notifications on';
+        notifBtn.classList.add('enabled');
+        notifStatus.textContent = 'You\'ll be reminded at 9 PM CST each night';
+      } else if (Notification.permission === 'denied') {
+        notifBtn.textContent = 'Blocked';
+        notifBtn.disabled = true;
+        notifStatus.textContent = 'Enable notifications for this site in iOS Settings';
+      } else {
+        notifBtn.textContent = 'Enable notifications';
+        notifBtn.classList.remove('enabled');
+        notifStatus.textContent = 'Get a reminder each night at 9 PM CST';
+      }
+    }
+
+    notifBtn.addEventListener('click', async () => {
+      if (localStorage.getItem('notif_enabled') === '1') {
+        // Toggle off
+        localStorage.removeItem('notif_enabled');
+        notifBtn.classList.remove('enabled');
+        updateNotifUI();
+        return;
+      }
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          localStorage.setItem('notif_enabled', '1');
+          await registerServiceWorker();
+          updateNotifUI();
+        } else {
+          updateNotifUI();
+        }
+      } catch (e) {
+        notifStatus.textContent = 'Error: ' + e.message;
+      }
+    });
+
+    async function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        await navigator.serviceWorker.register('sw.js');
+      }
+    }
+
+    // On load, register SW if notifications are already enabled
+    window.addEventListener('load', async () => {
+      render();
+      updateNotifUI();
+      if (localStorage.getItem('notif_enabled') === '1') {
+        await registerServiceWorker();
+      }
+    });
+  </script>
+</body>
+</html>
