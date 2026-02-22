@@ -629,13 +629,21 @@
 
     async function sendTimeToSW(time) {
       try {
+        if (!('serviceWorker' in navigator)) return;
         const reg = await navigator.serviceWorker.ready;
         if (reg.active) reg.active.postMessage({ type: 'SET_TIME', time });
-      } catch(e) {}
+      } catch(e) { console.warn('SW postMessage failed:', e); }
     }
 
     function updateNotifUI() {
       const supported = ('Notification' in window) && ('serviceWorker' in navigator);
+      const enabled = localStorage.getItem('notif_enabled') === '1';
+      const time = getTimeLabel();
+
+      // Reset state
+      notifBtn.disabled = false;
+      notifBtn.classList.remove('enabled');
+
       if (!supported) {
         notifBtn.textContent = 'Unsupported';
         notifBtn.disabled = true;
@@ -643,6 +651,7 @@
         notifStatusText.className = 'notif-status-text blocked';
         return;
       }
+
       if (Notification.permission === 'denied') {
         notifBtn.textContent = 'Blocked';
         notifBtn.disabled = true;
@@ -650,33 +659,45 @@
         notifStatusText.className = 'notif-status-text blocked';
         return;
       }
-      if (Notification.permission === 'granted' && localStorage.getItem('notif_enabled') === '1') {
+
+      if (Notification.permission === 'granted' && enabled) {
         notifBtn.textContent = 'On';
         notifBtn.classList.add('enabled');
-        notifStatusText.textContent = `${getTimeLabel()} CST`;
+        notifStatusText.textContent = `${time} CST`;
         notifStatusText.className = 'notif-status-text active';
       } else {
         notifBtn.textContent = 'Enable';
-        notifBtn.classList.remove('enabled');
-        notifStatusText.textContent = `${getTimeLabel()} CST`;
+        notifStatusText.textContent = `${time} CST`;
         notifStatusText.className = 'notif-status-text';
       }
     }
 
     notifBtn.addEventListener('click', async () => {
-      if (localStorage.getItem('notif_enabled') === '1') {
+      const enabled = localStorage.getItem('notif_enabled') === '1';
+
+      if (enabled) {
+        // Turn off
         localStorage.removeItem('notif_enabled');
         updateNotifUI();
         return;
       }
+
+      // Turn on — request permission if needed
       try {
-        const perm = await Notification.requestPermission();
+        let perm = Notification.permission;
+        if (perm === 'default') {
+          perm = await Notification.requestPermission();
+        }
         if (perm === 'granted') {
           localStorage.setItem('notif_enabled', '1');
-          if ('serviceWorker' in navigator) await navigator.serviceWorker.register('sw.js');
-          await sendTimeToSW(getSavedTime());
+          if ('serviceWorker' in navigator) {
+            await navigator.serviceWorker.register('sw.js');
+            await sendTimeToSW(getSavedTime());
+          }
         }
-      } catch(e) {}
+      } catch(e) {
+        console.warn('Notification enable failed:', e);
+      }
       updateNotifUI();
     });
 
