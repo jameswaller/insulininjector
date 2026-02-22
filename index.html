@@ -1,376 +1,510 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Insulin" />
-  <meta name="theme-color" content="#0a0a0f" />
+  <meta name="theme-color" content="#f5f4f0" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
   <title>Insulin Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
+    /* ── Tokens ── */
     :root {
-      --bg: #0a0a0f;
-      --surface: #13131a;
-      --border: #1e1e2e;
-      --left-color: #7eb8f7;
-      --right-color: #f7a67e;
-      --left-glow: rgba(126, 184, 247, 0.15);
-      --right-glow: rgba(247, 166, 126, 0.15);
-      --text: #e8e8f0;
-      --muted: #5a5a7a;
-      --done-color: #7ef7a6;
-      --done-glow: rgba(126, 247, 166, 0.15);
+      --radius: 24px;
+      --radius-sm: 12px;
+      --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+      /* Light */
+      --bg: #f5f4f0;
+      --bg-card: #ffffff;
+      --bg-muted: #eeecea;
+      --border: rgba(0,0,0,0.07);
+      --text-primary: #0d0c0a;
+      --text-secondary: #6b6860;
+      --text-tertiary: #a8a6a2;
+      --shadow: 0 2px 24px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 8px 48px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+
+      /* Accent — left: cool blue, right: warm amber */
+      --left-hue: 210;
+      --right-hue: 28;
+      --left: hsl(210, 85%, 52%);
+      --left-soft: hsl(210, 85%, 96%);
+      --left-glow: hsla(210, 85%, 52%, 0.18);
+      --right: hsl(28, 90%, 52%);
+      --right-soft: hsl(28, 90%, 95%);
+      --right-glow: hsla(28, 90%, 52%, 0.18);
+      --done: hsl(145, 60%, 42%);
+      --done-soft: hsl(145, 60%, 94%);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [data-theme="dark"], @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0d1117;
+        --bg-card: #161b22;
+        --bg-muted: #1c2128;
+        --border: rgba(255,255,255,0.07);
+        --text-primary: #f0ede8;
+        --text-secondary: #8b949e;
+        --text-tertiary: #484f58;
+        --shadow: 0 2px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3);
+        --shadow-lg: 0 8px 48px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+        --left-soft: hsla(210, 85%, 52%, 0.12);
+        --right-soft: hsla(28, 90%, 52%, 0.12);
+        --done-soft: hsla(145, 60%, 42%, 0.12);
+      }
+    }
+
+    [data-theme="dark"] {
+      --bg: #0d1117;
+      --bg-card: #161b22;
+      --bg-muted: #1c2128;
+      --border: rgba(255,255,255,0.07);
+      --text-primary: #f0ede8;
+      --text-secondary: #8b949e;
+      --text-tertiary: #484f58;
+      --shadow: 0 2px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3);
+      --shadow-lg: 0 8px 48px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+      --left-soft: hsla(210, 85%, 52%, 0.12);
+      --right-soft: hsla(28, 90%, 52%, 0.12);
+      --done-soft: hsla(145, 60%, 42%, 0.12);
+    }
+
+    [data-theme="light"] {
+      --bg: #f5f4f0;
+      --bg-card: #ffffff;
+      --bg-muted: #eeecea;
+      --border: rgba(0,0,0,0.07);
+      --text-primary: #0d0c0a;
+      --text-secondary: #6b6860;
+      --text-tertiary: #a8a6a2;
+      --shadow: 0 2px 24px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 8px 48px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+      --left-soft: hsl(210, 85%, 96%);
+      --right-soft: hsl(28, 90%, 95%);
+      --done-soft: hsl(145, 60%, 94%);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { height: 100%; }
 
     body {
+      font-family: 'Geist Mono', monospace;
       background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
+      color: var(--text-primary);
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 24px);
-      overflow: hidden;
-      position: relative;
+      padding: max(env(safe-area-inset-top), 24px) 20px max(env(safe-area-inset-bottom), 24px);
+      transition: background var(--transition), color var(--transition);
     }
 
-    /* Atmospheric background */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse 60% 50% at 30% 40%, var(--current-glow, var(--left-glow)) 0%, transparent 70%),
-                  radial-gradient(ellipse 40% 40% at 80% 80%, rgba(30, 15, 60, 0.4) 0%, transparent 70%);
-      pointer-events: none;
-      transition: background 1s ease;
-    }
-
-    body.side-right::before {
-      background: radial-gradient(ellipse 60% 50% at 70% 40%, var(--right-glow) 0%, transparent 70%),
-                  radial-gradient(ellipse 40% 40% at 20% 80%, rgba(60, 15, 15, 0.4) 0%, transparent 70%);
-    }
-
-    body.side-done::before {
-      background: radial-gradient(ellipse 60% 50% at 50% 40%, var(--done-glow) 0%, transparent 70%);
-    }
-
-    .container {
+    /* ── Layout ── */
+    .app {
       width: 100%;
-      max-width: 390px;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+      margin-bottom: 4px;
+    }
+
+    .app-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-tertiary);
+      letter-spacing: 0.05em;
+    }
+
+    .theme-toggle {
+      background: var(--bg-muted);
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background var(--transition), transform 0.2s;
+      color: var(--text-secondary);
+    }
+
+    .theme-toggle:hover { transform: rotate(20deg); }
+
+    /* ── Main card ── */
+    .main-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 36px 32px 32px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 0;
       position: relative;
-      z-index: 1;
+      overflow: hidden;
+      transition: background var(--transition), box-shadow var(--transition);
     }
 
-    .date-label {
+    /* Subtle color wash behind the card based on side */
+    .main-card::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      opacity: 0.5;
+      transition: background var(--transition);
+      pointer-events: none;
+    }
+
+    .main-card.side-left::before  { background: radial-gradient(circle, var(--left-glow), transparent 70%); }
+    .main-card.side-right::before { background: radial-gradient(circle, var(--right-glow), transparent 70%); }
+    .main-card.side-done::before  { background: radial-gradient(circle, hsla(145,60%,42%,0.12), transparent 70%); }
+
+    .date-line {
       font-size: 11px;
-      letter-spacing: 0.2em;
-      color: var(--muted);
+      font-weight: 400;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      margin-bottom: 48px;
-      font-weight: 300;
+      color: var(--text-tertiary);
+      margin-bottom: 32px;
+      position: relative;
     }
 
     .tonight-label {
-      font-size: 12px;
-      letter-spacing: 0.25em;
-      color: var(--muted);
-      text-transform: uppercase;
-      margin-bottom: 16px;
-      font-weight: 300;
-    }
-
-    .side-display {
-      font-family: 'DM Serif Display', serif;
-      font-size: clamp(72px, 22vw, 108px);
-      line-height: 1;
-      letter-spacing: -0.02em;
-      transition: color 0.6s ease, text-shadow 0.6s ease;
-      margin-bottom: 8px;
-      user-select: none;
-    }
-
-    body:not(.side-done) .side-display.left {
-      color: var(--left-color);
-      text-shadow: 0 0 60px rgba(126, 184, 247, 0.4);
-    }
-
-    body:not(.side-done) .side-display.right {
-      color: var(--right-color);
-      text-shadow: 0 0 60px rgba(247, 166, 126, 0.4);
-    }
-
-    body.side-done .side-display {
-      color: var(--done-color);
-      text-shadow: 0 0 60px rgba(126, 247, 166, 0.4);
-    }
-
-    .side-sublabel {
       font-size: 11px;
-      letter-spacing: 0.3em;
-      color: var(--muted);
+      font-weight: 400;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      margin-bottom: 56px;
-    }
-
-    .done-message {
-      font-family: 'DM Serif Display', serif;
-      font-size: 14px;
-      color: var(--done-color);
-      letter-spacing: 0.1em;
-      opacity: 0;
-      margin-bottom: 56px;
-      height: 20px;
-      transition: opacity 0.4s ease;
-    }
-
-    body.side-done .done-message {
-      opacity: 1;
-    }
-
-    body.side-done .side-sublabel {
-      opacity: 0;
-    }
-
-    .log-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
-      font-size: 12px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      padding: 16px 40px;
-      border-radius: 2px;
-      cursor: pointer;
-      transition: all 0.3s ease;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
       position: relative;
-      overflow: hidden;
-      margin-bottom: 16px;
     }
 
-    .log-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      transition: opacity 0.3s ease;
+    /* ── Big side pill ── */
+    .side-pill {
+      position: relative;
+      margin-bottom: 10px;
+      padding-bottom: 12px;
     }
 
-    body:not(.side-done) .log-btn:hover {
-      border-color: var(--left-color);
-      box-shadow: 0 0 20px rgba(126, 184, 247, 0.2);
+    .side-text {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(60px, 18vw, 88px);
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      transition: color var(--transition);
     }
 
-    body.side-right:not(.side-done) .log-btn:hover {
-      border-color: var(--right-color);
-      box-shadow: 0 0 20px rgba(247, 166, 126, 0.2);
-    }
+    .main-card.side-left  .side-text { color: var(--left); }
+    .main-card.side-right .side-text { color: var(--right); }
+    .main-card.side-done  .side-text { color: var(--done); }
 
-    .log-btn:disabled {
-      opacity: 0.4;
-      cursor: default;
-      pointer-events: none;
-    }
-
-    body.side-done .log-btn {
-      border-color: var(--done-color);
-      color: var(--done-color);
-      box-shadow: 0 0 20px rgba(126, 247, 166, 0.15);
-    }
-
-    .undo-btn {
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
+    .side-badge {
+      display: inline-block;
       font-size: 10px;
-      letter-spacing: 0.15em;
+      font-weight: 500;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      padding: 8px 16px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 36px;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .main-card.side-left  .side-badge { background: var(--left-soft); color: var(--left); }
+    .main-card.side-right .side-badge { background: var(--right-soft); color: var(--right); }
+    .main-card.side-done  .side-badge { background: var(--done-soft); color: var(--done); }
+
+    /* ── Primary button ── */
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-family: 'Geist Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
       cursor: pointer;
-      transition: color 0.2s ease;
+      transition: all var(--transition);
+      position: relative;
+    }
+
+    .main-card.side-left  .btn-primary { background: var(--left); color: #fff; }
+    .main-card.side-right .btn-primary { background: var(--right); color: #fff; }
+    .main-card.side-done  .btn-primary { background: var(--done-soft); color: var(--done); }
+
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-undo {
+      background: none;
+      border: none;
+      font-family: 'Geist Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      padding: 10px;
+      margin-top: 2px;
+      transition: color 0.2s;
       opacity: 0;
       pointer-events: none;
     }
 
-    body.side-done .undo-btn {
-      opacity: 1;
-      pointer-events: all;
+    .main-card.side-done .btn-undo { opacity: 1; pointer-events: all; }
+    .btn-undo:hover { color: var(--text-secondary); }
+
+    /* ── Streak chip ── */
+    .streak-chip {
+      display: none;
+      align-self: flex-end;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow);
+      margin-bottom: -4px;
     }
 
-    .undo-btn:hover { color: var(--text); }
+    .streak-chip.visible { display: block; }
+    .streak-chip strong { color: var(--done); font-weight: 500; }
 
-    .divider {
-      width: 1px;
-      height: 48px;
-      background: var(--border);
-      margin: 48px 0 24px;
+    /* ── Settings card ── */
+    .settings-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: background var(--transition);
     }
 
-    .notification-section {
+    .settings-row {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      gap: 16px;
+    }
+
+    .settings-row + .settings-row {
+      border-top: 1px solid var(--border);
+    }
+
+    .settings-label {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .settings-right {
+      display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .notif-label {
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-
-    .time-picker-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 4px;
-    }
-
     .time-input {
-      background: var(--surface);
+      background: var(--bg-muted);
       border: 1px solid var(--border);
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
-      font-size: 13px;
-      letter-spacing: 0.1em;
-      padding: 8px 12px;
-      border-radius: 2px;
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: 'Geist Mono', monospace;
+      font-size: 16px;
+      padding: 7px 12px;
       outline: none;
-      transition: border-color 0.2s ease;
-      width: 110px;
-      text-align: center;
-    }
-
-    .time-input:focus {
-      border-color: var(--muted);
-    }
-
-    .time-save-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      padding: 8px 14px;
-      border-radius: 2px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: border-color 0.2s, background var(--transition);
     }
 
-    .time-save-btn:hover {
-      color: var(--text);
-      border-color: var(--muted);
-    }
+    .time-input:focus { border-color: var(--left); }
 
-    .notif-btn {
-      background: transparent;
+    /* Small button */
+    .btn-sm {
+      background: var(--bg-muted);
       border: 1px solid var(--border);
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-family: 'Geist Mono', monospace;
       font-size: 10px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      padding: 10px 24px;
-      border-radius: 2px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .notif-btn:hover {
-      color: var(--text);
-      border-color: var(--muted);
-    }
-
-    .notif-btn.enabled {
-      color: var(--done-color);
-      border-color: var(--done-color);
-      box-shadow: 0 0 12px rgba(126, 247, 166, 0.1);
-    }
-
-    .notif-status {
-      font-size: 9px;
+      font-weight: 500;
       letter-spacing: 0.1em;
-      color: var(--muted);
-      text-align: center;
-      max-width: 260px;
-      line-height: 1.6;
-    }
-
-    .streak {
-      position: fixed;
-      top: env(safe-area-inset-top, 16px);
-      right: 24px;
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      color: var(--muted);
       text-transform: uppercase;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
     }
 
-    .streak span {
-      color: var(--done-color);
-      font-size: 13px;
+    .btn-sm:hover { background: var(--border); color: var(--text-primary); }
+    .btn-sm.saved { color: var(--done); border-color: var(--done-soft); }
+
+    /* Notification toggle button */
+    .notif-status-text {
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      text-align: right;
+      flex: 1;
     }
 
-    @keyframes pulse-in {
-      0% { transform: scale(0.95); opacity: 0.7; }
-      50% { transform: scale(1.02); }
-      100% { transform: scale(1); opacity: 1; }
+    .notif-status-text.active { color: var(--done); }
+    .notif-status-text.blocked { color: hsl(0,70%,55%); }
+
+    .btn-notif {
+      background: var(--bg-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-family: 'Geist Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    .side-display.animate {
-      animation: pulse-in 0.4s ease forwards;
+    .btn-notif:hover { background: var(--border); color: var(--text-primary); }
+    .btn-notif.enabled { background: var(--done-soft); color: var(--done); border-color: transparent; }
+    .btn-notif:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+
+    /* ── Animations ── */
+    @keyframes pop {
+      0%   { transform: scale(0.92); opacity: 0.6; }
+      60%  { transform: scale(1.04); }
+      100% { transform: scale(1);    opacity: 1; }
     }
+
+    .side-text.pop { animation: pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .app { animation: fadein 0.5s ease both; }
   </style>
 </head>
 <body>
-  <div class="streak" id="streak"></div>
+  <div class="app">
 
-  <div class="container">
-    <div class="date-label" id="dateLabel"></div>
-
-    <div class="tonight-label">Tonight's side</div>
-    <div class="side-display" id="sideDisplay"></div>
-    <div class="side-sublabel" id="sideSublabel">injection site</div>
-    <div class="done-message">✓ logged for tonight</div>
-
-    <button class="log-btn" id="logBtn">Mark as done</button>
-    <button class="undo-btn" id="undoBtn">undo</button>
-
-    <div class="divider"></div>
-
-    <div class="notification-section">
-      <div class="notif-label">Daily reminder</div>
-      <div class="time-picker-row">
-        <input type="time" class="time-input" id="timeInput" value="21:00" />
-        <button class="time-save-btn" id="timeSaveBtn">Set</button>
-      </div>
-      <button class="notif-btn" id="notifBtn">Enable notifications</button>
-      <div class="notif-status" id="notifStatus">Get a reminder each night at your chosen time (CST)</div>
+    <!-- Top bar -->
+    <div class="topbar">
+      <span class="app-name">Insulin</span>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">☀️</button>
     </div>
+
+    <!-- Streak chip -->
+    <div class="streak-chip" id="streakChip"></div>
+
+    <!-- Main card -->
+    <div class="main-card" id="mainCard">
+      <div class="date-line" id="dateLine"></div>
+      <div class="tonight-label">Tonight's side</div>
+      <div class="side-pill">
+        <div class="side-text" id="sideText"></div>
+      </div>
+      <div class="side-badge" id="sideBadge"></div>
+      <button class="btn-primary" id="logBtn"></button>
+      <button class="btn-undo" id="undoBtn">undo</button>
+    </div>
+
+    <!-- Settings card -->
+    <div class="settings-card">
+      <!-- Reminder time row -->
+      <div class="settings-row">
+        <span class="settings-label">Reminder</span>
+        <div class="settings-right">
+          <input type="time" class="time-input" id="timeInput" />
+        </div>
+      </div>
+      <!-- Notifications row -->
+      <div class="settings-row">
+        <span class="settings-label">Notifications</span>
+        <div class="settings-right">
+          <span class="notif-status-text" id="notifStatusText"></span>
+          <button class="btn-notif" id="notifBtn"></button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    // ── Timezone-aware day-of-year logic ──────────────────────────────────────
-    // CST = UTC-6, CDT = UTC-5. We use Intl to get the local date in
-    // America/Chicago so DST is handled automatically.
-    function getChicagoDateParts() {
+    // ── Theme ─────────────────────────────────────────────────────────────────
+    const html = document.documentElement;
+    const themeToggle = document.getElementById('themeToggle');
+
+    function getSystemTheme() {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function getTheme() {
+      return localStorage.getItem('theme') || 'auto';
+    }
+
+    function applyTheme(theme) {
+      const resolved = theme === 'auto' ? getSystemTheme() : theme;
+      html.setAttribute('data-theme', resolved);
+      themeToggle.textContent = resolved === 'dark' ? '☀️' : '🌙';
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const current = getTheme();
+      const resolved = current === 'auto' ? getSystemTheme() : current;
+      const next = resolved === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme', next);
+      applyTheme(next);
+    });
+
+    applyTheme(getTheme());
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (getTheme() === 'auto') applyTheme('auto');
+    });
+
+    // ── Date / side logic ─────────────────────────────────────────────────────
+    function getChicagoParts() {
       const now = new Date();
       const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/Chicago',
@@ -378,26 +512,24 @@
       }).formatToParts(now);
       const p = {};
       parts.forEach(x => p[x.type] = parseInt(x.value, 10));
-      return p; // { year, month, day }
+      return p;
     }
 
-    function getDayOfYear(year, month, day) {
-      // Day of year 1-indexed. Works for leap years.
+    function getDOY(year, month, day) {
       const start = new Date(Date.UTC(year, 0, 1));
-      const current = new Date(Date.UTC(year, month - 1, day));
-      return Math.floor((current - start) / 86400000) + 1;
+      const cur   = new Date(Date.UTC(year, month - 1, day));
+      return Math.floor((cur - start) / 86400000) + 1;
     }
 
     function getTonightSide() {
-      const { year, month, day } = getChicagoDateParts();
-      const doy = getDayOfYear(year, month, day);
-      // DOY 52 (Feb 21 2026) = Left, so even = Left, odd = Right
+      const { year, month, day } = getChicagoParts();
+      const doy = getDOY(year, month, day);
       return doy % 2 === 0 ? 'Left' : 'Right';
     }
 
     function getStorageKey() {
-      const { year, month, day } = getChicagoDateParts();
-      return `done_${year}_${getDayOfYear(year, month, day)}`;
+      const { year, month, day } = getChicagoParts();
+      return `done_${year}_${getDOY(year, month, day)}`;
     }
 
     function isDoneToday() {
@@ -406,14 +538,11 @@
 
     function markDone() {
       localStorage.setItem(getStorageKey(), '1');
-      // Increment streak
-      const { year, month, day } = getChicagoDateParts();
-      const doy = getDayOfYear(year, month, day);
+      const { year, month, day } = getChicagoParts();
+      const doy  = getDOY(year, month, day);
       const prev = parseInt(localStorage.getItem('streak_doy') || '0', 10);
       const prevYear = parseInt(localStorage.getItem('streak_year') || '0', 10);
       let streak = parseInt(localStorage.getItem('streak') || '0', 10);
-
-      const expectedPrev = doy - 1 === 0 ? 365 : doy - 1; // rough, good enough
       if ((prev === doy - 1 && prevYear === year) || (doy === 1 && prev >= 364)) {
         streak += 1;
       } else {
@@ -424,158 +553,139 @@
       localStorage.setItem('streak_year', year);
     }
 
-    function undoDone() {
-      localStorage.removeItem(getStorageKey());
-    }
+    function undoDone() { localStorage.removeItem(getStorageKey()); }
 
-    // ── UI ────────────────────────────────────────────────────────────────────
-    const body = document.body;
-    const sideDisplay = document.getElementById('sideDisplay');
-    const sideSublabel = document.getElementById('sideSublabel');
-    const logBtn = document.getElementById('logBtn');
-    const undoBtn = document.getElementById('undoBtn');
-    const dateLabel = document.getElementById('dateLabel');
-    const streakEl = document.getElementById('streak');
+    // ── Render ────────────────────────────────────────────────────────────────
+    const mainCard   = document.getElementById('mainCard');
+    const dateLine   = document.getElementById('dateLine');
+    const sideText   = document.getElementById('sideText');
+    const sideBadge  = document.getElementById('sideBadge');
+    const logBtn     = document.getElementById('logBtn');
+    const undoBtn    = document.getElementById('undoBtn');
+    const streakChip = document.getElementById('streakChip');
 
     function render() {
       const side = getTonightSide();
       const done = isDoneToday();
-      const { year, month, day } = getChicagoDateParts();
-      const dateStr = new Date(year, month - 1, day)
+      const { year, month, day } = getChicagoParts();
+
+      dateLine.textContent = new Date(year, month - 1, day)
         .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-      dateLabel.textContent = dateStr;
+      sideText.textContent = side;
 
-      sideDisplay.textContent = side;
-      sideDisplay.className = 'side-display ' + side.toLowerCase();
+      mainCard.className = 'main-card ' + (done ? 'side-done' : 'side-' + side.toLowerCase());
 
-      body.className = '';
       if (done) {
-        body.classList.add('side-done');
-        logBtn.textContent = '✓ done';
+        sideBadge.textContent = '✓ Logged for tonight';
+        logBtn.textContent = 'Done for tonight';
       } else {
-        body.classList.add('side-' + side.toLowerCase());
+        sideBadge.textContent = side + ' injection site';
         logBtn.textContent = 'Mark as done';
       }
 
       const streak = parseInt(localStorage.getItem('streak') || '0', 10);
       if (streak > 1) {
-        streakEl.innerHTML = `streak <span>${streak}</span>`;
+        streakChip.innerHTML = `🔥 <strong>${streak}</strong> day streak`;
+        streakChip.classList.add('visible');
       } else {
-        streakEl.textContent = '';
+        streakChip.classList.remove('visible');
       }
     }
 
     logBtn.addEventListener('click', () => {
       if (isDoneToday()) return;
       markDone();
-      sideDisplay.classList.remove('animate');
-      void sideDisplay.offsetWidth;
-      sideDisplay.classList.add('animate');
+      sideText.classList.remove('pop');
+      void sideText.offsetWidth;
+      sideText.classList.add('pop');
       render();
     });
 
-    undoBtn.addEventListener('click', () => {
-      undoDone();
-      render();
-    });
+    undoBtn.addEventListener('click', () => { undoDone(); render(); });
 
     // ── Notifications ─────────────────────────────────────────────────────────
-    const notifBtn = document.getElementById('notifBtn');
-    const notifStatus = document.getElementById('notifStatus');
-    const timeInput = document.getElementById('timeInput');
-    const timeSaveBtn = document.getElementById('timeSaveBtn');
+    const notifBtn        = document.getElementById('notifBtn');
+    const notifStatusText = document.getElementById('notifStatusText');
+    const timeInput       = document.getElementById('timeInput');
 
-    // Load saved time or default to 21:00
-    function getSavedTime() {
-      return localStorage.getItem('notif_time') || '21:00';
-    }
+    function getSavedTime() { return localStorage.getItem('notif_time') || '21:00'; }
 
-    function getTimeLabel() {
-      const [h, m] = getSavedTime().split(':').map(Number);
+    function getTimeLabel(t) {
+      const [h, m] = (t || getSavedTime()).split(':').map(Number);
       const ampm = h >= 12 ? 'PM' : 'AM';
-      const hour = h % 12 || 12;
-      const min = m.toString().padStart(2, '0');
-      return `${hour}:${min} ${ampm}`;
+      return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`;
     }
 
     timeInput.value = getSavedTime();
 
-    timeSaveBtn.addEventListener('click', async () => {
+    timeInput.addEventListener('change', async () => {
       const val = timeInput.value;
       if (!val) return;
       localStorage.setItem('notif_time', val);
-      timeSaveBtn.textContent = '✓';
-      setTimeout(() => timeSaveBtn.textContent = 'Set', 1500);
-      // If notifications already enabled, tell SW about the new time
-      if (localStorage.getItem('notif_enabled') === '1') {
-        await sendTimeToSW(val);
-      }
+      if (localStorage.getItem('notif_enabled') === '1') await sendTimeToSW(val);
       updateNotifUI();
     });
 
     async function sendTimeToSW(time) {
-      const reg = await navigator.serviceWorker.ready;
-      reg.active && reg.active.postMessage({ type: 'SET_TIME', time });
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg.active) reg.active.postMessage({ type: 'SET_TIME', time });
+      } catch(e) {}
     }
 
     function updateNotifUI() {
-      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-        notifBtn.textContent = 'Not supported';
+      const supported = ('Notification' in window) && ('serviceWorker' in navigator);
+      if (!supported) {
+        notifBtn.textContent = 'Unsupported';
         notifBtn.disabled = true;
-        notifStatus.textContent = 'Notifications require adding this app to your Home Screen on iOS 16.4+';
+        notifStatusText.textContent = 'Requires iOS 16.4+ home screen';
+        notifStatusText.className = 'notif-status-text blocked';
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        notifBtn.textContent = 'Blocked';
+        notifBtn.disabled = true;
+        notifStatusText.textContent = 'Enable in iOS Settings';
+        notifStatusText.className = 'notif-status-text blocked';
         return;
       }
       if (Notification.permission === 'granted' && localStorage.getItem('notif_enabled') === '1') {
-        notifBtn.textContent = 'Notifications on';
+        notifBtn.textContent = 'On';
         notifBtn.classList.add('enabled');
-        notifStatus.textContent = `Reminder set for ${getTimeLabel()} CST each night`;
-      } else if (Notification.permission === 'denied') {
-        notifBtn.textContent = 'Blocked';
-        notifBtn.disabled = true;
-        notifStatus.textContent = 'Enable notifications for this site in iOS Settings';
+        notifStatusText.textContent = `${getTimeLabel()} CST`;
+        notifStatusText.className = 'notif-status-text active';
       } else {
-        notifBtn.textContent = 'Enable notifications';
+        notifBtn.textContent = 'Enable';
         notifBtn.classList.remove('enabled');
-        notifStatus.textContent = `Get a reminder each night at ${getTimeLabel()} CST`;
+        notifStatusText.textContent = `${getTimeLabel()} CST`;
+        notifStatusText.className = 'notif-status-text';
       }
     }
 
     notifBtn.addEventListener('click', async () => {
       if (localStorage.getItem('notif_enabled') === '1') {
         localStorage.removeItem('notif_enabled');
-        notifBtn.classList.remove('enabled');
         updateNotifUI();
         return;
       }
-
       try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
           localStorage.setItem('notif_enabled', '1');
-          await registerServiceWorker();
+          if ('serviceWorker' in navigator) await navigator.serviceWorker.register('sw.js');
           await sendTimeToSW(getSavedTime());
-          updateNotifUI();
-        } else {
-          updateNotifUI();
         }
-      } catch (e) {
-        notifStatus.textContent = 'Error: ' + e.message;
-      }
+      } catch(e) {}
+      updateNotifUI();
     });
 
-    async function registerServiceWorker() {
-      if ('serviceWorker' in navigator) {
-        await navigator.serviceWorker.register('sw.js');
-      }
-    }
-
-    // On load, register SW if notifications are already enabled
+    // ── Init ──────────────────────────────────────────────────────────────────
     window.addEventListener('load', async () => {
       render();
       updateNotifUI();
-      if (localStorage.getItem('notif_enabled') === '1') {
-        await registerServiceWorker();
+      if (localStorage.getItem('notif_enabled') === '1' && 'serviceWorker' in navigator) {
+        await navigator.serviceWorker.register('sw.js');
         await sendTimeToSW(getSavedTime());
       }
     });
