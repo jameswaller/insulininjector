@@ -342,7 +342,8 @@
     function getTonightSide() {
       const { year, month, day } = getChicagoDateParts();
       const doy = getDayOfYear(year, month, day);
-      return doy % 2 === 1 ? 'Left' : 'Right';
+      // DOY 52 (Feb 21 2026) = Left, so even = Left, odd = Right
+      return doy % 2 === 0 ? 'Left' : 'Right';
     }
 
     function getStorageKey() {
@@ -391,7 +392,7 @@
       const side = getTonightSide();
       const done = isDoneToday();
       const { year, month, day } = getChicagoDateParts();
-      const dateStr = new Date(Date.UTC(year, month - 1, day))
+      const dateStr = new Date(year, month - 1, day)
         .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
       dateLabel.textContent = dateStr;

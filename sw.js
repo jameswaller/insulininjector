@@ -100,7 +100,7 @@ function getDayOfYear() {
 
 function getTonightSide() {
   const doy = getDayOfYear();
-  return doy % 2 === 1 ? 'Left' : 'Right';
+  return doy % 2 === 0 ? 'Left' : 'Right';
 }
 
 let notifTimer = null;
